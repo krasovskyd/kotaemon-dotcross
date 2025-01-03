@@ -196,10 +196,6 @@ class BaseChatOpenAI(ChatLLM):
         """Get the openai response"""
         raise NotImplementedError
 
-    async def aopenai_response(self, client, **kwargs):
-        """Get the openai response"""
-        raise NotImplementedError
-
     def invoke(
         self, messages: str | BaseMessage | list[BaseMessage], *args, **kwargs
     ) -> LLMInterface:
@@ -215,10 +211,8 @@ class BaseChatOpenAI(ChatLLM):
     ) -> LLMInterface:
         client = self.prepare_client(async_version=True)
         input_messages = self.prepare_message(messages)
-        resp = (
-            await self.aopenai_response(
-                client, messages=input_messages, stream=False, **kwargs
-            )
+        resp = await self.openai_response(
+            client, messages=input_messages, stream=False, **kwargs
         ).dict()
 
         return self.prepare_output(resp)
@@ -296,7 +290,8 @@ class ChatOpenAI(BaseChatOpenAI):
 
         return OpenAI(**params)
 
-    def prepare_params(self, **kwargs):
+    def openai_response(self, client, **kwargs):
+        """Get the openai response"""
         if "tools_pydantic" in kwargs:
             kwargs.pop("tools_pydantic")
 
@@ -318,16 +313,7 @@ class ChatOpenAI(BaseChatOpenAI):
         params = {k: v for k, v in params_.items() if v is not None}
         params.update(kwargs)
 
-        return params
-
-    def openai_response(self, client, **kwargs):
-        """Get the openai response"""
-        params = self.prepare_params(**kwargs)
         return client.chat.completions.create(**params)
-
-    async def aopenai_response(self, client, **kwargs):
-        params = self.prepare_params(**kwargs)
-        return await client.chat.completions.create(**params)
 
 
 class AzureChatOpenAI(BaseChatOpenAI):
@@ -375,7 +361,8 @@ class AzureChatOpenAI(BaseChatOpenAI):
 
         return AzureOpenAI(**params)
 
-    def prepare_params(self, **kwargs):
+    def openai_response(self, client, **kwargs):
+        """Get the openai response"""
         if "tools_pydantic" in kwargs:
             kwargs.pop("tools_pydantic")
 
@@ -397,13 +384,4 @@ class AzureChatOpenAI(BaseChatOpenAI):
         params = {k: v for k, v in params_.items() if v is not None}
         params.update(kwargs)
 
-        return params
-
-    def openai_response(self, client, **kwargs):
-        """Get the openai response"""
-        params = self.prepare_params(**kwargs)
         return client.chat.completions.create(**params)
-
-    async def aopenai_response(self, client, **kwargs):
-        params = self.prepare_params(**kwargs)
-        return await client.chat.completions.create(**params)
